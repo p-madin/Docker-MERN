@@ -1,0 +1,60 @@
+
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mern-network
+
+  # Backend Service (Node.js/Express)
+  backend:
+    build: ./backend
+    container_name: backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      # Connection string for the backend to connect to MongoDB.
+      # The hostname is the name of the MongoDB service defined above.
+      MONGO_URI: mongodb://mongodb:27017/mydatabase
+    volumes:
+      # Mount the backend source code for live development.
+      - ./backend:/usr/src/app
+      # Exclude node_modules from being mounted to prevent potential issues.
+      - /usr/src/app/node_modules
+    networks:
+      - mern-network
+    depends_on:
+      - mongodb
+
+  # Frontend Service (React)
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount the frontend source code for live development (hot-reloading).
+      - ./frontend:/usr/src/app
+      # Exclude node_modules from being mounted.
+      - /usr/src/app/node_modules
+    networks:
+      - mern-network
+    depends_on:
+      - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true 
+
+# Docker Volumes for data persistence
+volumes:
+  mongo-data:
+
+# Custom network for inter-service communication
+networks:
+  mern-network:
+    driver: bridge
