@@ -11,3 +11,14 @@ This repository represents a bare minimum for 1 MERN stack, implementing a new b
 
 
 1. PS C:\\Docker-Mern> docker compose up
+
+
+
+## Browse:
+
+
+
+1. http://localhost:3000
+
+
+
