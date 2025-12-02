@@ -4,10 +4,15 @@ services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
+    command: mongod --quiet
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: adminuser
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
     volumes:
       - mongo-data:/data/db
+      - ./mongodb:/docker-entrypoint-initdb.d/
     networks:
       - mern-network
 
@@ -21,7 +26,8 @@ services:
     environment:
       # Connection string for the backend to connect to MongoDB.
       # The hostname is the name of the MongoDB service defined above.
-      MONGO_URI: mongodb://mongodb:27017/mydatabase
+      - MONGO_URI=mongodb://mongodb:27017/mydatabase
+      - CHOKIDAR_USEPOLLING=true
     volumes:
       # Mount the backend source code for live development.
       - ./backend:/usr/src/app
@@ -48,7 +54,9 @@ services:
     depends_on:
       - backend
     environment:
-      - CHOKIDAR_USEPOLLING=true 
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - DEBUG=vite:hmr
 
 # Docker Volumes for data persistence
 volumes:

@@ -11,5 +11,10 @@ export default defineConfig({
     proxy: {
       '/api': 'http://backend:5000'
     },
+    watch: {
+      usePolling: true, // Useful for some Docker setups to detect changes
+      interval: 100,
+    },
   },
 });
+console.log("Vite config loaded. Polling set to true.");

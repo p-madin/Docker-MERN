@@ -18,7 +18,12 @@ COPY . .
 # Expose the port the Express app runs on
 EXPOSE 5000
 
+RUN npm install -g nodemon
+# npm install --save-dev nodemon ts-node?
+
 # Command to run the application using npm
 #CMD ["npm", "start"]
 CMD ["npm", "run", "dev"]
+#CMD ["nodemon", "--exec", "ts-node", "src/index.ts"]
+#nodemon --exec ts-node src/index.ts
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
