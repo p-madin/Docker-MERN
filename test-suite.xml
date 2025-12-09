@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testSuite>
+  <name>MERN Stack Session Persistence Tests</name>
+  
+  <!-- Browser Automation Tests -->
+  <testGroup>
+    <test>
+      <index>1</index>
+      <name>Complete Login and Logout Flow</name>
+      <description>Test the app's login and logout function</description>
+      <!-- Navigate to app -->
+      <step>
+        <action>NavigateTo</action>
+        <url>http://localhost:3000</url>
+        <expected>
+          <pageTitle>MERN Stack App</pageTitle>
+        </expected>
+      </step>
+
+      <!-- Fill login form -->
+      <step>
+        <action>FillForm</action>
+        <selector>#loginFormComponent</selector>
+        <parameters>
+          <parameter>
+            <name>username</name>
+            <value>amy_syd</value>
+          </parameter>
+          <parameter>
+            <name>password</name>
+            <value>a_syd</value>
+          </parameter>
+        </parameters>
+        <submit>true</submit>
+      </step>
+
+      <!-- Verify we're logged in -->
+      <!-- Verify logout button -->
+      <step>
+        <action>AssertText</action>
+        <selector>#loginFormComponent legend</selector>
+        <expected>
+          <contains>User Session</contains>
+        </expected>
+      </step>
+
+      <!-- Now test logout -->
+      <step>
+        <action>Click</action>
+        <selector>#loginFormComponent input[type="submit"]</selector>
+      </step>
+
+      <!-- Verify logged out -->
+      <step>
+        <action>AssertText</action>
+        <selector>#loginFormComponent legend</selector>
+        <expected>
+          <contains>Login</contains>
+        </expected>
+      </step>
+    </test>
+
+  </testGroup>
+
+</testSuite>

@@ -1,24 +1,60 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import NewRoutePage from './components/newRoute.tsx';
-import Home from './components/home.tsx';
-import Dashboard from './components/dashboard.tsx';
+import NewRoutePage from './pages/newRoute.tsx';
+import Home from './pages/home.tsx';
+import Dashboard from './pages/dashboard.tsx';
+import NavBar, { RouteConfig } from './components/NavBar.tsx';
+import ProtectedRoute from './components/ProtectedRoute.tsx';
+import { useSession, SessionProvider } from './components/fetcher.tsx';
 
-// Define a TypeScript interface for the data we expect from the API
-interface GreetingData {
-  message: string;
-}
+// Define route configuration
+const routes: RouteConfig[] = [
+  { path: "/", label: "Home", element: <Home /> },
+  { path: "/new-route", label: "New Route", element: <NewRoutePage />, guestOnly: true },
+  { path: "/dashboard", label: "Dashboard", element: <Dashboard />, requireAuth: true }
+];
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { loggedIn, loading } = useSession();
+
+  const filteredRoutes = routes.filter(route => {
+    if (route.requireAuth && !loggedIn) return false;
+    if (route.guestOnly && loggedIn) return false;
+    return true;
+  });
+
+  if (loading) {
+    return <div>Loading application...</div>;
+  }
 
   return (
     <BrowserRouter>
+      <NavBar routes={filteredRoutes} />
       <Routes>
-         <Route path="/" element={<Home />} />
-         <Route path="/new-route" element={<NewRoutePage />} />
-         <Route path="/dashboard" element={<Dashboard />} />
+        {routes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <ProtectedRoute
+                requireAuth={route.requireAuth}
+                guestOnly={route.guestOnly}
+              >
+                {route.element}
+              </ProtectedRoute>
+            }
+          />
+        ))}
       </Routes>
     </BrowserRouter>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <SessionProvider>
+      <AppContent />
+    </SessionProvider>
   );
 };
 

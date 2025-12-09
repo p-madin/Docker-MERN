@@ -1,0 +1,19 @@
+# Test Service
+# Runs automated tests for the MERN stack application
+
+FROM node:18-alpine
+
+WORKDIR /tests
+
+# Copy test script
+COPY test-session.js .
+
+# Install curl for additional testing capabilities
+RUN apk add --no-cache curl
+
+# Set environment variables for container networking
+ENV BACKEND_URL=http://backend:5000
+ENV FRONTEND_URL=http://frontend:3000
+
+# Run tests
+CMD ["node", "test-session.js"]

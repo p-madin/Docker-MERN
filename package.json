@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/react": "^19.2.7"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.11",
+    "puppeteer": "^24.32.0",
+    "xpath": "^0.0.34"
+  }
+}

@@ -4,14 +4,24 @@ import path from 'path';
 import bodyParser from 'body-parser';
 import { Collection, MongoClient, Document, ObjectId } from 'mongodb';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 
 
 const app: Express = express();
 
+// Configure session with MongoDB store to persist sessions across server restarts
 app.use(session({
-    secret: 'my_secret',
-    resave: false,
-    saveUninitialized: true
+  secret: 'my_secret',
+  resave: false,
+  saveUninitialized: false, // Don't create session until something stored
+  store: MongoStore.create({
+    mongoUrl: 'mongodb://app_user:app_password@172.19.0.2:27017/stackDB',
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60 // Session TTL (time to live) in seconds - 1 day
+  }),
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 // 1 day in milliseconds
+  }
 }));
 
 const port = 5000;
@@ -33,19 +43,19 @@ async function connectToMongo() {
 }
 
 interface appUsers {
-    _id: ObjectId;
-    name: string;
-    age: number;
-    city: string;
-    username: string;
+  _id: ObjectId;
+  name: string;
+  age: number;
+  city: string;
+  username: string;
 }
 
 class appUser implements appUsers {
-    _id!: ObjectId;
-    name: string = "";
-    age: number = 0;
-    city: string = "";
-    username: string = "";
+  _id!: ObjectId;
+  name: string = "";
+  age: number = 0;
+  city: string = "";
+  username: string = "";
 }
 
 async function getDocumentCount<T extends Document>(
@@ -74,20 +84,36 @@ app.use(customLogger);
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 // Add a route handler for the root URL
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.send('Backend is running!');
 });
 
 // API endpoint
-app.get('/api/greeting', (req, res) => {
-  res.json({ message: 'Hello from the server!'});
-});
-app.get('/api/something', (req, res) => {
-  res.json({ message: 'Hello from the server!'});
+app.get('/api/greeting', (req: Request, res: Response) => {
+  console.log(req.session);
+  res.json({ message: 'Hello from the server!' });
 });
 
-app.get('/api/getUsers', async (req, res) => {
-    console.log(req.session);
+// Session check endpoint
+app.get('/api/session', (req: Request, res: Response) => {
+  if (req.session.user) {
+    res.json({
+      loggedIn: true,
+      user: {
+        id: req.session.user.id,
+        username: req.session.user.username
+      }
+    });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
+
+app.get('/api/something', (req: Request, res: Response) => {
+  res.json({ message: 'Hello from the server!' });
+});
+
+app.get('/api/getUsers', async (req: Request, res: Response) => {
   var this_cli = await connectToMongo();
   const db = this_cli.db('stackDB');
   const collection = db.collection<appUsers>('appUsers');
@@ -99,63 +125,72 @@ app.get('/api/getUsers', async (req, res) => {
     local.name = doc.name;
     local._id = doc._id;
     returned.push(local);
-    //output = output + "<li>"+doc.name+"</li>\n";
   });
-  //output = output + "</ul>";
-  res.json({ users: returned});
+  res.json({ users: returned });
 });
 
 
-app.post('/api/submit-form', async (req, res) => {
-    const formData = req.body; // Data from the form
-    console.log('Received form data:', formData);
+app.post('/api/submit-form', async (req: Request, res: Response) => {
+  const formData = req.body; // Data from the form
+  console.log('Received form data:', formData);
 
-    // Perform server-side validation, database operations, etc.
-    if (!formData.username || !formData.password) {
-        return res.status(400).json({ message: 'Name and email are required.' });
-    }
+  // Perform server-side validation, database operations, etc.
+  if (!formData.username || !formData.password) {
+    return res.status(400).json({ message: 'Name and email are required.' });
+  }
 
-    var this_cli = await connectToMongo();
-    const db = this_cli.db('stackDB');
-    const collection = db.collection<appUsers>('appUsers');
-    const userCount = await getDocumentCount(collection, {username:formData.username,password:formData.password});
-    //const cursor = await collection.find({username:formData.username,password:formData.password});
-    console.log(userCount);
+  var this_cli = await connectToMongo();
+  const db = this_cli.db('stackDB');
+  const collection = db.collection<appUsers>('appUsers');
 
-    let message_output = "";
+  // Find the user with matching credentials
+  const user = await collection.findOne({ username: formData.username, password: formData.password });
 
-    if(userCount==1){
-        message_output = "Login successful";
-        req.session.user = { id: 1, username: "john_doe" };
-    }else{
-        message_output = "Login unsuccessful";
-    }
+  let message_output = "";
 
-    // Simulate a successful response
-    res.status(200).json({ message: message_output, data: formData });
+  if (user) {
+    message_output = "Login successful";
+    // Set the session with the actual user's id and username
+    req.session.user = { id: user._id.toString(), username: user.username };
+  } else {
+    message_output = "Login unsuccessful";
+  }
+
+  // Simulate a successful response
+  res.status(200).json({ message: message_output, data: formData });
 });
 
-app.post('/api/register-form', async (req, res) => {
-    const formData = req.body; // Data from the form
-    console.log('Received form data:', formData);
+app.post('/api/register-form', async (req: Request, res: Response) => {
+  const formData = req.body; // Data from the form
+  console.log('Received form data:', formData);
 
-    // Perform server-side validation, database operations, etc.
-    if (!formData.username || !formData.password) {
-        return res.status(400).json({ message: 'Name and email are required.' });
+  // Perform server-side validation, database operations, etc.
+  if (!formData.username || !formData.password) {
+    return res.status(400).json({ message: 'Name and email are required.' });
+  }
+  var this_cli = await connectToMongo();
+  const db = this_cli.db('stackDB');
+  const collection = db.collection<appUsers>('appUsers');
+  const result = await collection.insertOne(formData);
+  console.log(`A document was inserted with the _id: ${result.insertedId}`);
+
+  res.status(200).json({ message: 'User added' });
+  console.log("register occurred");
+});
+
+// Logout endpoint
+app.post('/api/logout', (req: Request, res: Response) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to logout' });
     }
-    var this_cli = await connectToMongo();
-    const db = this_cli.db('stackDB');
-    const collection = db.collection<appUsers>('appUsers');
-    const result = await collection.insertOne(formData);
-    console.log(`A document was inserted with the _id: ${result.insertedId}`);
-
-    res.status(200).json({message:'User added'});
-    console.log("register occurred");
+    res.status(200).json({ message: 'Logout successful' });
+  });
 });
 
 // For any other route, serve the React app's main index.html file.
 // This is crucial for handling client-side routing.
-app.get('*', (req, res) => {
+app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 

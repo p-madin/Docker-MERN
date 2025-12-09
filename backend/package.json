@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "connect-mongo": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
@@ -20,11 +21,11 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/node": "^20.10.0",
     "@types/express-session": "^1.18.0",
+    "@types/node": "^20.10.0",
+    "mongodb": "^6.x.x",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.2",
-    "mongodb": "^6.x.x"
+    "typescript": "^5.3.2"
   }
 }

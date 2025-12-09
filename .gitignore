@@ -1,3 +1,5 @@
 .idea
 package-lock.json
 index.js
+node_modules
+screenshots/*
